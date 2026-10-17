@@ -1,9 +1,9 @@
 {
   "source": "https://nci-prawlepoint.org.uk/scripts/wx-data.php",
-  "retrieved_at": "2026-10-17T18:37:20.486424+00:00",
+  "retrieved_at": "2026-10-17T18:37:53.651539+00:00",
   "observation_time": "2026-10-17T18:37:04+00:00",
   "observation_time_raw": "Sat, 17 Oct 2026 19:37:04 +0100",
-  "age_seconds": 16.5,
+  "age_seconds": 49.7,
   "wind_speed_knots": 13.0,
   "latest_wind_speed_knots": 13.0,
   "gust_knots": 16.5,
