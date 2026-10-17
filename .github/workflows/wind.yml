@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
+  issue_comment:
+    types: [created]
   push:
     branches: [main]
     paths:
@@ -10,15 +12,48 @@ on:
       - 'tests/**'
       - '.github/workflows/wind.yml'
       - 'docs/index.html'
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-concurrency:
-  group: wind-publication
-  cancel-in-progress: false
+permissions: {}
 jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      allowed: ${{ steps.command.outputs.allowed }}
+    steps:
+      - name: Authorize event
+        id: command
+        shell: bash
+        run: |
+          python3 - <<'PYAUTH'
+          import json, os
+          from pathlib import Path
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+          name = os.environ['GITHUB_EVENT_NAME']
+          allowed = name in ('schedule', 'workflow_dispatch', 'push')
+          if name == 'issue_comment':
+              issue = event.get('issue', {})
+              comment = event.get('comment', {})
+              allowed = (
+                  event.get('action') == 'created'
+                  and issue.get('number') == 1
+                  and 'pull_request' not in issue
+                  and comment.get('body') == '/wind'
+                  and comment.get('user', {}).get('login') == 'dancollier-git'
+                  and event.get('repository', {}).get('owner', {}).get('login') == 'dancollier-git'
+              )
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('allowed=' + str(allowed).lower() + '\n')
+          PYAUTH
   publish:
+    needs: authorize
+    if: needs.authorize.outputs.allowed == 'true'
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    concurrency:
+      group: wind-publication
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -26,6 +61,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
