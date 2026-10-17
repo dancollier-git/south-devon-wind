@@ -49,4 +49,12 @@ python record.py                    # one live reading, update publication files
 python -m unittest discover -s tests -v  # offline, no NCI requests
 ```
 
-GitHub Actions access to the source must be verified in an actual workflow run; a successful Codex workspace fetch alone does not prove runner access. See the Actions logs and committed JSON for the outcome.
+## Verified deployment
+
+Verified on 17 October 2026 in [GitHub Actions run 39014537987](https://github.com/dancollier-git/south-devon-wind/actions/runs/39014537987). All seven offline tests passed, the runner fetched NCI directly, committed the observation, and deployed Pages successfully. Both public JSON endpoints returned HTTP 200 after deployment.
+
+The genuine observation at 08:40:43 BST (07:40:43 UTC) reported sustained wind 10.4 knots, latest wind 10.4 knots, gust 14.8 knots and direction N / 355 degrees. It was 22.1 seconds old at collection, with no warnings and wind_alert=false. This is a historical validation example, not a claim about current conditions.
+
+Initial setup encountered an integration permission denial for Pages administration. The owner enabled Settings → Pages → Source → GitHub Actions; the next workflow succeeded. No NCI access restrictions were encountered in the two runner fetches. This verifies functionality, not long-term uptime or weather measurement accuracy.
+
+GitHub emitted non-blocking notices about older action Node.js targets (automatically run on Node 24) and an upcoming ubuntu-latest image migration. The validated run passed; maintain action versions and rerun checks as runner images change.
