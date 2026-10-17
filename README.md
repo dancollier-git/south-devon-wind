@@ -58,3 +58,23 @@ The genuine observation at 08:40:43 BST (07:40:43 UTC) reported sustained wind 1
 Initial setup encountered an integration permission denial for Pages administration. The owner enabled Settings → Pages → Source → GitHub Actions; the next workflow succeeded. No NCI access restrictions were encountered in the two runner fetches. This verifies functionality, not long-term uptime or weather measurement accuracy.
 
 GitHub emitted non-blocking notices about older action Node.js targets (automatically run on Node 24) and an upcoming ubuntu-latest image migration. The validated run passed; maintain action versions and rerun checks as runner images change.
+
+## On-demand checks
+
+Manual triggering is already enabled by `workflow_dispatch` in the existing workflow. In GitHub, open **Actions → Record and publish wind → Run workflow**, select `main`, and run it. The same job, checker, history recording and Pages deployment are used for manual and hourly runs; manual dispatch does not change the schedule or thresholds.
+
+From an already authenticated Codex environment with GitHub Actions write access:
+
+```sh
+gh workflow run wind.yml --repo dancollier-git/south-devon-wind --ref main
+```
+
+Wait for that specific new run to finish successfully, then read `latest.json` and confirm its observation timestamp is fresh. Do not assume an existing Pages response belongs to the requested run; compare its JSON to the record committed by that run. A manual observation may legitimately share a timestamp with the previous observation if the station has not yet updated. Avoid rapid repeated requests.
+
+### ChatGPT integration
+
+The GitHub connector tools exposed during the 17 October 2026 check do not include a workflow-dispatch operation. Available rerun operations are not a substitute for dispatching the current `main` workflow. The authenticated GitHub CLI in the Codex workspace can dispatch it without a new credential; that is distinct from connector-only access in an ordinary ChatGPT chat. An immediate conversational request requires an active chat/agent with this CLI capability; hourly execution remains entirely hosted by GitHub.
+
+For connector-only triggering without introducing another service or credential, a possible next enhancement is a narrowly scoped `issue_comment` command on one dedicated control issue. It would need an exact command such as `/wind`, an owner-only sender check, main-branch code execution, and the same existing collection job. ChatGPT could then post the command using its connected GitHub comment tool. This bridge has **not** been implemented: approval to add that trigger and control issue is the specific additional step needed. Connector availability/permissions must also be checked in the target ChatGPT chat. No new token or service has been created.
+
+Manual dispatch was reverified in [run 39058328360](https://github.com/dancollier-git/south-devon-wind/actions/runs/39058328360): all tests, NCI retrieval, history commit and Pages deployment succeeded. Both public JSON files returned HTTP 200 and matched the committed data. The genuine observation was 19:29:04 BST on 17 October 2026, sustained 13.0 knots, gust 15.6 knots, bearing 355 degrees, dominant direction N. All 13 prior history records were preserved, with one new record appended. Checker, recorder and workflow file hashes were unchanged. The five preceding scheduled runs were successful and the workflow remained active.
