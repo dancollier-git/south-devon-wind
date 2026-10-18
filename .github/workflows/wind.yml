@@ -10,6 +10,7 @@ on:
     paths:
       - '*.py'
       - 'tests/**'
+      - 'config/**'
       - '.github/workflows/wind.yml'
       - 'docs/index.html'
 permissions: {}
@@ -72,14 +73,18 @@ jobs:
         id: reading
         continue-on-error: true
         run: python record.py
+      - name: Collect and archive forecasts
+        id: forecast
+        continue-on-error: true
+        run: python forecast.py
       - name: Record observation or failure
         run: |
           test -f docs/latest.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/latest.json docs/history.json
+          git add docs/latest.json docs/history.json docs/forecast.json docs/assessments.json docs/accuracy.json archive/forecasts
           if ! git diff --cached --quiet; then
-            git commit -m 'Record Prawle Point wind observation'
+            git commit -m 'Archive Prawle observations and South Devon forecasts'
             git push
           fi
       - uses: actions/configure-pages@v5
@@ -91,6 +96,7 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Report source health
         env:
+          FORECAST_OUTCOME: ${{ steps.forecast.outcome }}
           READING_OUTCOME: ${{ steps.reading.outcome }}
         run: |
           python - <<'PY'
@@ -99,5 +105,11 @@ jobs:
           data = json.loads(Path('docs/latest.json').read_text())
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
               summary.write('## Prawle Point source check\n\n```json\n' + json.dumps(data, indent=2) + '\n```\n')
+              forecasts = json.loads(Path('docs/forecast.json').read_text())
+              summary.write('## Forecast source checks\n\n')
+              for source in forecasts['snapshots']:
+                  summary.write(f"- {source['location']} {source['kind']}: {source['status']} {source.get('error', '')}\n")
           PY
           test "$READING_OUTCOME" = success
+          test "$FORECAST_OUTCOME" = success
+          python forecast_health.py

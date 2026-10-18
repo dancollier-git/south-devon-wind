@@ -86,3 +86,79 @@ Manual dispatch was reverified in [run 39058328360](https://github.com/dancollie
 On 17 October 2026, ChatGPT posted the command through its existing GitHub connector, attributed to `dancollier-git`. [Exact `/wind` test run 39058927707](https://github.com/dancollier-git/south-devon-wind/actions/runs/39058927707) passed authorization, all 11 tests, NCI collection, history recording and Pages deployment. The real observation at 19:37:04 BST was sustained 13.0 knots, gust 16.5 knots, direction N / 360 degrees, 49.7 seconds old at retrieval. Both published JSON endpoints returned HTTP 200 and matched the committed files. All 14 prior history records remained intact; the code-push validation and command run appended two records. The checker and recorder hashes were unchanged.
 
 A live [uppercase `/WIND` rejection run](https://github.com/dancollier-git/south-devon-wind/actions/runs/39058901825) completed authorization but skipped collection/publication. Offline tests exercised the exact authorization code against other users, issues, pull requests, edited events, whitespace, missing fields and incorrect commands; those were rejected. No other user's identity was impersonated for testing. The hourly cron remains `17 * * * *`, the workflow remains active, and issue #1 remains open.
+
+## South Devon forecast archive
+
+Read [FEASIBILITY.md](FEASIBILITY.md) for the access investigation and source
+limitations. XCWeather and Surfline collection is disabled: their public sites
+do not establish permission to automate and republish their forecasts.
+Open-Meteo's documented non-commercial APIs provide the initial implementation.
+If this project becomes commercial, arrange an appropriate paid API contract
+before continued collection. Data is attributed in each publication and Pages.
+
+The existing hourly job now collects five forecasts after recording NCI, even
+when the observation failed. Each source retries transient failures at most
+twice, with timeouts and schema/unit checks. A failed source publishes an error
+with empty rows, never an old forecast labelled current. Successful sources
+survive partial failures. Publication precedes the final failing health step.
+The NCI checker/recorder and their JSON formats remain unchanged.
+
+- `archive/forecasts/YYYY-MM-DD.jsonl`: append-only attempts in git, including raw
+  responses, requested/returned coordinates, UTC retrieval and valid times,
+  source, units and model selection. Issue time is explicitly null because the
+  standard API doesn't provide it. Forecast snapshots are not model-run archives.
+- `docs/forecast.json`: compact current attempt, with all valid hours and source
+  errors. Bigbury wind coordinates represent the Bantham/Bigbury area; South
+  Milton and Prawle have separate requested coordinates (approximate WGS84 in
+  `forecast.LOCATIONS`). Coastal grid cells may differ materially from the beach.
+- `docs/assessments.json`: remaining hourly assessments and seven UTC calendar-day
+  summaries, with reasons; daily status is the most restrictive remaining hour.
+- `docs/accuracy.json`: Prawle speed bias (forecast minus observed), MAE/RMSE and
+  counts by 24-hour retrieval-lead band. It uses fresh usable observations only,
+  deduplicates station timestamps and excludes hindsight. No backfilled forecasts
+  or automatic threshold adjustments. Zero samples produce null scores.
+
+Forecasts are unhealthy after three hours. Run `python forecast_health.py` to
+recalculate freshness; clients must likewise compare `retrieved_at` and
+`generated_at` with their current clock. Static JSON cannot update itself if
+Actions stops. Provider model age is unknown, separately from retrieval age.
+Archive growth is unbounded: at hourly cadence this can consume hundreds of MB
+yearly. Monitor repository size and migrate old daily files to durable object
+storage before git size becomes a problem; never silently delete history.
+
+### Assessment configuration
+
+The owner deferred supplying beach thresholds. Both entries in
+`config/wingfoil.json` are intentionally null. To configure an entry, supply
+`min_wind_knots`, `max_wind_knots`, `max_gust_knots` and `direction_sectors` (a list
+of inclusive meteorological wind-from degree pairs, wrapping through north if
+start > end). No numbers are inferred from the Prawle observation alert.
+
+Configured wind/gust/direction violations are NO GO. Below-minimum wind is WATCH
+only when all required safety inputs are known. Missing thresholds, surf data or
+South Milton reef confirmation are HEADS-UP and suppress GO. The assessment
+function reserves explicit breaking-wave and reef-confirmation inputs for a
+future licensed source; the collector never populates these from offshore models.
+A breaking-wave upper bound >=6 ft is NO GO, including 6–10 ft and 8–12 ft.
+Low-tide shelter and wave-riding potential need local tide, bathymetry and
+breaking-wave confirmation. Swell height is never interpreted as surf height.
+No tide API or reef model has been commissioned; the output says so.
+
+Local commands: `python forecast.py` collects and writes the archive/publication;
+`python forecast_health.py` checks current files; the existing unittest discovery
+runs all offline tests. Live source verification and deployment details follow.
+
+
+### Verification on 18 October 2026
+
+All 20 offline tests passed, covering existing NCI behaviour, command
+permissions, forecast units/timestamps/schema, bounded retries, failed-attempt
+publication, missing sources, assessment gates, freshness and accuracy matching.
+A live local run fetched all five documented APIs successfully (168 valid hours
+each); the first real snapshot is included in the archive. Both marine locations
+returned the same coarse offshore cell: this is not beach-specific surf data.
+The forecast health check passed. No live forecasts were fabricated.
+
+The existing hourly workflow and Pages source are reused. A deployment is only
+verified when a specific GitHub Actions run and its published JSON are checked;
+local tests alone do not establish hosted execution.
