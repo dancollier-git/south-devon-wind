@@ -202,3 +202,10 @@ The forecast health check passed. No live forecasts were fabricated.
 The existing hourly workflow and Pages source are reused. A deployment is only
 verified when a specific GitHub Actions run and its published JSON are checked;
 local tests alone do not establish hosted execution.
+
+
+### Calibration deployment verified — 19 October 2026
+
+[CALIBRATION_REPORT.md](CALIBRATION_REPORT.md) records the successful deployment,
+29 passing tests, published seven-day windows, endpoint checks and the current
+small-sample accuracy metrics. All observation history was preserved.
