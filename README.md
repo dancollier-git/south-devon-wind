@@ -275,6 +275,18 @@ When the owner says “log my session”, “I went wingfoiling”, “I SUP sur
 - Where available, attach the **forecast issued before the session**, its retrieval timestamp and the applicable forecast hour, distinguishing it from later forecasts; never use a hindsight forecast as if it had been available beforehand. If a pre-session snapshot cannot be verified, leave forecast comparison unknown. Keep forecast/observations distinct.
 - Do not modify the hourly forecast collector or its automated files when recording a session. The session log is manual owner-confirmed evidence, not a live weather feed.
 
+### South Milton reef exposure calibration and observation completeness
+
+The owner confirms that the South Milton reef **always exposes at low tide**, including neaps. The useful on-water window is bounded by the actual **first exposure** and **re-covering** of the reef, not simply the time of predicted low water. Collect owner-reported local clock times (Europe/London) on each visit:
+- `reef_first_exposed_local`: when the reef first becomes exposed on the falling tide.
+- `reef_recovered_local`: when the reef becomes covered again on the rising tide.
+- `reef_observation_precision`: exact / approximate / not observed, with notes describing the visible landmark and any uncertainty.
+- `tide_reference`: reference station, predicted low-water time and height, and source **only when verified**; otherwise null. Record spring/neap context only from a verified tide range or height, never guessed.
+
+Keep these fields in a session entry's `observations.reef` object, or record a reef-only `observation` in a future compatible schema; never fabricate an exposure/recovery time or treat an unseen boundary as observed. Preserve partial records. Over multiple observations, compare exposure and recovery offsets from predicted low water against tidal range/height to estimate future usable windows; distinguish owner observations from model estimates and do not change production forecast rules without review.
+
+**Interactive completion check:** When the owner reports a visit or session, acknowledge and save what they supplied, then check for missing relevant observations. Explicitly tell them what is incomplete and ask **one short follow-up question at a time**, prioritising reef first-exposure and re-covering times for South Milton, then tide/launch, actual wind and gustiness, wing/foil choice, waves and session quality. Example: “I've logged your launch and wind. We haven't completed the reef exposure time — did you see when it first uncovered?” If the owner didn't witness a boundary, record `not observed` and move on; do not pressure them or imply they must wait at the beach. Distinguish `not observed` from `not yet answered`. For other locations or SUP sessions, only ask applicable questions. The record may remain partial when the owner stops or says they don't know; do not claim it is complete. A future proactive reminder outside the conversation requires a separately scheduled ChatGPT task, not this README alone.
+
 ### Using the history
 
 Before personalised recommendations, read this log alongside current `docs/forecast.json`, `docs/assessments.json` and `config/wingfoil.json`. Compare the owner's reported enjoyment, gear choices and real launch conditions against the *contemporaneous* forecast where possible. Treat small samples cautiously and **do not** silently change wind thresholds or assert a proven calibration from one session. The owner can request corrections or deletion of a session entry.
