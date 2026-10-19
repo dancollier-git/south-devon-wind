@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "description": "Owner-reported wingfoiling and SUP sessions. Append only confirmed observations; keep unknown values null and distinguish subjective reports from instrument measurements.",
+  "sessions": []
+}
