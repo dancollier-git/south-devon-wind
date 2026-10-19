@@ -209,3 +209,18 @@ local tests alone do not establish hosted execution.
 [CALIBRATION_REPORT.md](CALIBRATION_REPORT.md) records the successful deployment,
 29 passing tests, published seven-day windows, endpoint checks and the current
 small-sample accuracy metrics. All observation history was preserved.
+
+## Daily report tide context and personal gear learning
+
+[DAILY_REPORT.md](DAILY_REPORT.md) is the reusable procedure for reports requested
+in chat: consult current ADMIRALTY tide information, cite the source and align it
+with UK-local wind session windows. Official Met Office beach pages displaying
+ADMIRALTY predictions provide an accessible fallback to EasyTide. Name the actual
+reference station (currently Salcombe) and explain uncertainty at South Milton.
+Tides are report context, not a new archived dataset. The hourly JSON still shows
+TIDE UNKNOWN until an automatic feed is separately configured. This document does
+not create scheduled report delivery or install instructions in other GPT chats.
+
+The owner's actual wing and foil choices, performance comments and retrospective
+better choices will inform personal recommendations over time. The procedure
+keeps these separate from forecasts and Prawle measurements.

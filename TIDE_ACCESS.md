@@ -40,3 +40,16 @@ coverage. Near low means +/-90 minutes for **ranking only**; +/-30 minutes label
 low tide. Those are planning heuristics, not water-depth or reef-safety thresholds.
 Even reliable predictions cannot confirm current launch safety, surge or reef
 exposure; those checks must come from current local knowledge.
+
+## Live tide context for chat reports — owner preference, 19 October 2026
+
+The owner chose to consult tides when preparing a daily chat report rather than
+archive tide predictions. [DAILY_REPORT.md](DAILY_REPORT.md) defines that process:
+read EasyTide or the official Met Office pages displaying ADMIRALTY predictions,
+verify dates/timezone/station, cite the source and explain proxy limitations.
+The Bantham, Bigbury and nearby Hope Cove pages identify Salcombe as the tide
+station. This is reference-port timing, not a verified South Milton reef model.
+
+The hourly machine output above remains TIDE UNKNOWN; the chat report adds its
+own live-source context. No API key, cached tide dataset or scheduled tide
+collector is introduced by this report setup.
