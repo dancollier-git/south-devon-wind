@@ -224,3 +224,35 @@ not create scheduled report delivery or install instructions in other GPT chats.
 The owner's actual wing and foil choices, performance comments and retrospective
 better choices will inform personal recommendations over time. The procedure
 keeps these separate from forecasts and Prawle measurements.
+
+
+## Existing 05:00 ChatGPT forecast task
+
+The owner confirms the active **Local Wind & Swell Check** ChatGPT task runs at
+**05:00 Europe/London**, reading:
+
+- https://dancollier-git.github.io/south-devon-wind/forecast.json
+- https://dancollier-git.github.io/south-devon-wind/assessments.json
+
+No additional scheduler is needed. The task is managed in ChatGPT; this
+repository does not change its instructions or claim to inspect its delivery.
+The hourly Actions cron stays `17 * * * *` UTC (local :17 under both BST/GMT).
+05:00 London is 04:00 UTC during BST and 05:00 UTC during GMT. The prior hour's
+scheduled run supplies the morning report, subject to GitHub scheduling delays.
+On 19 October, recent scheduled starts were around :33–:53 rather than :17, so
+neither exact start time nor guaranteed publication before 05:00 is promised.
+
+Every successful collection regenerates both files from the same snapshot time,
+archives forecasts, then commits and deploys `docs` to Pages. The serialized job
+checks out current main; observation and forecast failures are published before
+the final source-health failure. After deployment, `publication_check.py` fetches
+both public files and compares their full JSON against this run, using unique
+query parameters and bounded retries to allow CDN propagation. A mismatched,
+unreachable or old publication fails the workflow; published source failures
+are still checked separately. The check adds no weather/tide requests.
+
+The report should recalculate age from `forecast.json.retrieved_at` and
+`assessments.json.generated_at`. Older than three hours, future timestamps,
+source errors or mismatched generation times must be called out rather than
+presented as current. Retrieval freshness does not establish model-run age.
+Tides remain live report context as described in DAILY_REPORT.md.

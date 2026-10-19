@@ -5,9 +5,12 @@ reports requested in chat, separately from the forecast archive. The archive is
 for comparing forecasts/observations with actual sessions and learning personal
 wing/foil choices. It does not need a copy of third-party tide predictions.
 
-This document is the reusable report procedure, not a scheduled delivery service,
-an installed GPT integration or an automatic tide API connection. A reporting
-assistant needs web access and must read this procedure when producing a report.
+The owner confirms an existing active ChatGPT task, **Local Wind & Swell Check**,
+runs at **05:00 Europe/London** and now reads the public forecast.json and
+assessments.json endpoints. That task owns report delivery; do not create a
+separate Codex scheduler. This repository supplies hourly data and the reusable
+report procedure, not an automatic tide API connection. A reporting assistant
+needs web access to consult live tides.
 
 ## Read the current forecast
 

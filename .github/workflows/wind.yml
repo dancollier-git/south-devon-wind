@@ -94,8 +94,13 @@ jobs:
       - name: Deploy JSON to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published forecast JSON
+        id: publication
+        continue-on-error: true
+        run: python publication_check.py
       - name: Report source health
         env:
+          PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
           FORECAST_OUTCOME: ${{ steps.forecast.outcome }}
           READING_OUTCOME: ${{ steps.reading.outcome }}
         run: |
@@ -113,3 +118,4 @@ jobs:
           test "$READING_OUTCOME" = success
           test "$FORECAST_OUTCOME" = success
           python forecast_health.py
+          test "$PUBLICATION_OUTCOME" = success

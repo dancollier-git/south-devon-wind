@@ -111,6 +111,17 @@ class RetryAndHealthTests(unittest.TestCase):
                    for loc in f.LOCATIONS for kind in ('wind', 'marine')
                    if loc != 'prawle' or kind == 'wind']
         ratings = {'generated_at': NOW.isoformat(), 'locations': {'south_milton': {}, 'bigbury': {}}}
-        self.assertTrue(check({'snapshots': sources}, ratings, NOW))
-        self.assertFalse(check({'snapshots': sources}, ratings, NOW + timedelta(hours=4)))
-        self.assertFalse(check({'snapshots': sources[:-1]}, ratings, NOW))
+        self.assertTrue(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW))
+        self.assertFalse(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW + timedelta(hours=4)))
+        self.assertFalse(check({'snapshots': sources[:-1], 'retrieved_at': NOW.isoformat()}, ratings, NOW))
+
+
+    def test_read_time_health_rejects_mixed_generations(self):
+        from forecast_health import check
+        sources = [{'location': loc, 'kind': kind, 'status': 'ok', 'retrieved_at': NOW.isoformat()}
+                   for loc in f.LOCATIONS for kind in ('wind', 'marine')
+                   if loc != 'prawle' or kind == 'wind']
+        bundle = {'retrieved_at': NOW.isoformat(), 'snapshots': sources}
+        ratings = {'generated_at': (NOW - timedelta(minutes=10)).isoformat(),
+                   'locations': {'south_milton': {}, 'bigbury': {}}}
+        self.assertFalse(check(bundle, ratings, NOW))

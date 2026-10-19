@@ -14,7 +14,9 @@ def check(bundle, ratings, now):
         return False
     try:
         age = (now - utc(ratings['generated_at'])).total_seconds()
-        return (all(fresh(s, now) for s in sources) and 0 <= age <= MAX_AGE
+        return (bundle['retrieved_at'] == ratings['generated_at']
+                and all(s['retrieved_at'] == bundle['retrieved_at'] and fresh(s, now) for s in sources)
+                and 0 <= age <= MAX_AGE
                 and set(ratings['locations']) == {'south_milton', 'bigbury'})
     except (KeyError, ValueError, TypeError):
         return False
