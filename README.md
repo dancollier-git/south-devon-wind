@@ -256,3 +256,25 @@ The report should recalculate age from `forecast.json.retrieved_at` and
 source errors or mismatched generation times must be called out rather than
 presented as current. Retrieval freshness does not establish model-run age.
 Tides remain live report context as described in DAILY_REPORT.md.
+
+## Permanent owner session log — ChatGPT handover
+
+**Repository:** `dancollier-git/south-devon-wind`  
+**Canonical owner observations:** [`data/sessions.json`](data/sessions.json)
+
+When the owner says “log my session”, “I went wingfoiling”, “I SUP surfed”, or provides a retrospective observation, ChatGPT should use its connected GitHub tools to read this README and the **latest** `data/sessions.json`, then append a structured entry and commit the updated file to the same repository. This is the persistent source of truth across conversations, **not** ChatGPT's memory or the forecast archive. Confirm the successful commit and link the record; never say it was saved before the GitHub write succeeds. If write access is unavailable, clearly say it was not saved and offer a copyable entry for later submission.
+
+### Recording rules
+
+- Accept informal, conversational or voice-dictated observations; do not require a form. Clarify only essential ambiguity such as which day or spot; leave other missing values `null` or absent, never invent details.
+- Store an entry in the top-level `sessions` array, keeping `schema_version` and existing entries unchanged. Suggested fields: `id` (stable unique date/spot/session identifier), `date_local` (YYYY-MM-DD), `location`, `sport` (`wingfoil` or `sup_surf`), `start_local`, `end_local`, `gear` (board, wing, front foil, mast, paddle as applicable), `observations` (felt wind, gusts, direction, swell, breaking surf, tide, launch, quality, difficulty), `rating_1_to_5`, `notes`, `recorded_at` and `source`: `owner_reported`. Keep units explicit when known.
+- Preserve the owner's original words in `notes` as closely as practical, with concise structured interpretation separately. Mark estimates and subjective judgements as such. Do not turn felt wind into measured wind or offshore swell into breaking surf.
+- Avoid duplicates: check for an existing entry with the same date, spot, sport and time; amend that entry only if the owner is correcting or extending it. For any update, first fetch the current blob SHA and use GitHub's SHA-checked file update; on conflict, re-fetch and merge rather than overwriting someone else's entries.
+- Where available, attach the **forecast issued before the session**, its retrieval timestamp and the applicable forecast hour, distinguishing it from later forecasts; never use a hindsight forecast as if it had been available beforehand. If a pre-session snapshot cannot be verified, leave forecast comparison unknown. Keep forecast/observations distinct.
+- Do not modify the hourly forecast collector or its automated files when recording a session. The session log is manual owner-confirmed evidence, not a live weather feed.
+
+### Using the history
+
+Before personalised recommendations, read this log alongside current `docs/forecast.json`, `docs/assessments.json` and `config/wingfoil.json`. Compare the owner's reported enjoyment, gear choices and real launch conditions against the *contemporaneous* forecast where possible. Treat small samples cautiously and **do not** silently change wind thresholds or assert a proven calibration from one session. The owner can request corrections or deletion of a session entry.
+
+**Quick prompt:** “South Milton this morning, 10–12, 4.5 m wing and 900 foil. Gusty but brilliant, launch flat. Log that.”
