@@ -217,6 +217,8 @@ in chat: consult current ADMIRALTY tide information, cite the source and align i
 with UK-local wind session windows. Official Met Office beach pages displaying
 ADMIRALTY predictions provide an accessible fallback to EasyTide. Name the actual
 reference station (currently Salcombe) and explain uncertainty at South Milton.
+**Owner-confirmed local observation (19 October 2026): At South Milton, the reef always exposes at low tide.** Do not describe reef exposure at low water as uncertain or suggest that neap low tides may leave it submerged. The extent and duration of exposure, water depth, surf and launch safety still vary and require local checks. This observation does not supply a tide time or replace a verified tide forecast.
+
 Tides are report context, not a new archived dataset. The hourly JSON still shows
 TIDE UNKNOWN until an automatic feed is separately configured. This document does
 not create scheduled report delivery or install instructions in other GPT chats.
