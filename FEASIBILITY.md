@@ -1,4 +1,11 @@
-# Forecast feasibility — 18 October 2026
+# Forecast feasibility — initial investigation 18 October 2026
+
+**19 October calibration update:** Owner thresholds are now configured. The
+assessment policy paragraphs below describe the initial implementation and are
+superseded by [README.md](README.md#owner-calibration-19-october-2026). Missing
+breaking-wave data now permits provisional wind candidates; 6–8 ft is caution,
+6–10/8–12 ft remains NO GO. Daily summaries select daylight sessions.
+See [TIDE_ACCESS.md](TIDE_ACCESS.md) for the local tide access investigation.
 
 ## Decision
 

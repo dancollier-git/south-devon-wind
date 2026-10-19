@@ -111,8 +111,8 @@ The NCI checker/recorder and their JSON formats remain unchanged.
   errors. Bigbury wind coordinates represent the Bantham/Bigbury area; South
   Milton and Prawle have separate requested coordinates (approximate WGS84 in
   `forecast.LOCATIONS`). Coastal grid cells may differ materially from the beach.
-- `docs/assessments.json`: remaining hourly assessments and seven UTC calendar-day
-  summaries, with reasons; daily status is the most restrictive remaining hour.
+- `docs/assessments.json`: hourly assessments and seven Europe/London calendar-day
+  summaries, with the best viable daylight session windows and reasons.
 - `docs/accuracy.json`: Prawle speed bias (forecast minus observed), MAE/RMSE and
   counts by 24-hour retrieval-lead band. It uses fresh usable observations only,
   deduplicates station timestamps and excludes hindsight. No backfilled forecasts
@@ -126,30 +126,70 @@ Archive growth is unbounded: at hourly cadence this can consume hundreds of MB
 yearly. Monitor repository size and migrate old daily files to durable object
 storage before git size becomes a problem; never silently delete history.
 
-### Assessment configuration
+### Owner calibration (19 October 2026)
 
-The owner deferred supplying beach thresholds. Both entries in
-`config/wingfoil.json` are intentionally null. To configure an entry, supply
-`min_wind_knots`, `max_wind_knots`, `max_gust_knots` and `direction_sectors` (a list
-of inclusive meteorological wind-from degree pairs, wrapping through north if
-start > end). No numbers are inferred from the Prawle observation alert.
+`config/wingfoil.json` contains the owner's actual wind calibration. Forecast
+speeds are **not bias-corrected**. Prawle accuracy reporting remains separate.
 
-Configured wind/gust/direction violations are NO GO. Below-minimum wind is WATCH
-only when all required safety inputs are known. Missing thresholds, surf data or
-South Milton reef confirmation are HEADS-UP and suppress GO. The assessment
-function reserves explicit breaking-wave and reef-confirmation inputs for a
-future licensed source; the collector never populates these from offshore models.
-A breaking-wave upper bound >=6 ft is NO GO, including 6–10 ft and 8–12 ft.
-Low-tide shelter and wave-riding potential need local tide, bathymetry and
-breaking-wave confirmation. Swell height is never interpreted as surf height.
-No tide API or reef model has been commissioned; the output says so.
+| Location/direction | NO GO below | WATCH | GO candidate | Strong candidate |
+|---|---:|---:|---:|---:|
+| South Milton SW–W (225°–270°) | 13 kt | 13 to <16 | 16 to <18 | >=18 |
+| South Milton NW (315°) | 16 kt | 16 to <19 | 19 to <21 | >=21 |
+| Bigbury NE–SE (45°–135°) | 15 kt | 15 to <18 | >=18 | — |
+
+For WNW, all South Milton speed boundaries increase linearly from W to NW
+(+0 to +3 kt). The NW allowance extends to 337.5° (the conventional NW compass
+sector edge), holding the +3 kt adjustment beyond 315°; this configurable sector
+edge is an implementation assumption rather than a new owner wind threshold. S/SSW (180° to <225°) is WATCH if >=13 kt, otherwise insufficient
+wind. Unsupported directions are NO GO under this owner's current calibration.
+No wind or gust ceiling is imposed. Review flags at sustained >=35 kt, gust
+>=45 kt or gust spread >=15 kt are explicit provisional **review heuristics**,
+not owner limits, safety guarantees, or automatic downgrades. Hazardous launch
+information or dangerous breaking waves can override otherwise excellent wind.
+
+Breaking-wave preferences: 2–4 ft generally manageable; 4–6 ft potentially
+excellent; upper bound >6 and <10 ft CAUTION/WATCH (including 6–8); upper bound
+>=10 ft NO GO (including 6–10 and 8–12, conservatively covering other very large
+ranges). These bands apply only to attributed breaking-wave data, never
+Open-Meteo swell or combined significant wave height. Missing breaking waves
+retain wind-based candidates with **WAVE HEIGHT UNVERIFIED**. Fully confirmed GO
+requires genuine breaking-wave and local launch checks, and for South Milton
+local reef confirmation. No live breaking-wave or launch-confirmation source is
+connected, so live output remains provisional.
+
+Each hour includes UK local date/time with numeric UTC offset and BST/GMT label,
+location, sustained/gust/direction, separate wind suitability, offshore swell
+height/period/direction, breaking range (null when unavailable), tide state,
+launch suitability, wave-riding potential, overall recommendation, confidence,
+reasons and cautions. `status` remains an alias of the overall recommendation.
+Assessments use schema version 2; forecast/observation JSON endpoints are retained.
+
+Days 1–3 publish actionable WATCH/GO-candidate sessions; days 4–7 label promising
+sessions HEADS-UP while preserving underlying wind suitability. Each day lists
+up to two non-overlapping 1–3 hour windows: first favour the strongest minimum
+wind suitability, then duration, proximity to predicted low tide at South Milton,
+and morning sessions. Remaining ties prefer the earlier start. Afternoon
+unsuitability cannot hide a good morning. Only complete future hourly blocks
+with the sun above the horizon at both ends are selected. Daylight uses the
+[NOAA solar approximation](https://gml.noaa.gov/grad/solcalc/solareqns.PDF),
+not a fixed clock-hour rule. The day of the October clock change has 25 local
+hours; UTC iteration preserves both 01:00 occurrences. A day with no viable
+remaining full daylight session says so, even if wind is suitable at night.
+
+Tides remain **unknown**: see [TIDE_ACCESS.md](TIDE_ACCESS.md). Bigbury can work
+at any tide, with launch checks. South Milton's low-tide reef shelter is a
+positive, never inferred from strong wind or offshore waves. Internal support
+for a future licensed local tide adapter reports nearest low and rising/falling
+state; +/-90 minutes is only a ranking heuristic, not a reef exposure guarantee.
+Fresh, attributed predictions require verified local station coverage. The
+production collector has no such feed and does not publish invented tide times.
 
 Local commands: `python forecast.py` collects and writes the archive/publication;
 `python forecast_health.py` checks current files; the existing unittest discovery
 runs all offline tests. Live source verification and deployment details follow.
 
 
-### Verification on 18 October 2026
+### Initial verification on 18 October 2026
 
 All 20 offline tests passed, covering existing NCI behaviour, command
 permissions, forecast units/timestamps/schema, bounded retries, failed-attempt

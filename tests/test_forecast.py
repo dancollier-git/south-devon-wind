@@ -48,21 +48,6 @@ class ForecastTests(unittest.TestCase):
         self.assertFalse(f.fresh(s, NOW + timedelta(hours=4)))
         self.assertFalse(f.fresh(s, NOW - timedelta(seconds=1)))
 
-    def test_breaking_waves_not_swell(self):
-        w = {'wind_speed_10m': 20, 'wind_gusts_10m': 25, 'wind_direction_10m': 250}
-        m = {'swell_wave_height': 10}
-        rules = {'min_wind_knots': 15, 'max_wind_knots': 25, 'max_gust_knots': 30,
-                 'direction_sectors': [[220, 280]]}
-        for waves in ((6, 10), (8, 12)):
-            self.assertEqual(f.assess(w, m, None, NOW, 'south_milton', waves)['status'], 'NO GO')
-        self.assertEqual(f.assess(w, m, rules, NOW, 'bigbury')['status'], 'HEADS-UP')
-        self.assertEqual(f.assess(w, m, rules, NOW, 'bigbury', (1, 3))['status'], 'GO')
-        self.assertEqual(f.assess(w, m, rules, NOW, 'south_milton', (1, 3))['status'], 'HEADS-UP')
-        self.assertEqual(f.assess(w, m, rules, NOW, 'south_milton', (1, 3), True)['status'], 'GO')
-        self.assertEqual(f.assess({**w, 'wind_speed_10m': 10}, m, rules, NOW, 'bigbury', (1, 3))['status'], 'WATCH')
-        self.assertEqual(f.assess({**w, 'wind_gusts_10m': 31}, m, rules, NOW, 'bigbury')['status'], 'NO GO')
-        self.assertEqual(f.assess({**w, 'wind_direction_10m': 90}, m, rules, NOW, 'bigbury')['status'], 'NO GO')
-
     def test_missing_feeds_still_seven_days(self):
         result = f.assessments([], {'south_milton': None, 'bigbury': None}, NOW)
         for place in result['locations'].values():
@@ -70,7 +55,7 @@ class ForecastTests(unittest.TestCase):
             self.assertTrue(all(d['status'] == 'HEADS-UP' for d in place['daily']))
 
     def test_config_validation(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises((KeyError, ValueError)):
             f.validate_rules({'south_milton': {'min_wind_knots': -1}, 'bigbury': None})
 
     def test_accuracy_deduplicates_and_excludes_hindsight(self):

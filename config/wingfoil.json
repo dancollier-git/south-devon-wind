@@ -1,4 +1,36 @@
 {
-  "south_milton": null,
-  "bigbury": null
+  "south_milton": {
+    "preferred_direction_degrees": [
+      225,
+      270
+    ],
+    "southerly_direction_degrees": [
+      180,
+      225
+    ],
+    "nw_direction_degrees": 315,
+    "nw_extra_knots": 3,
+    "minimum_knots": 13,
+    "candidate_knots": 16,
+    "strong_candidate_knots": 18,
+    "review_flags": {
+      "sustained_knots": 35,
+      "gust_knots": 45,
+      "gust_spread_knots": 15
+    },
+    "nw_sector_end_degrees": 337.5
+  },
+  "bigbury": {
+    "direction_degrees": [
+      45,
+      135
+    ],
+    "minimum_knots": 15,
+    "candidate_knots": 18,
+    "review_flags": {
+      "sustained_knots": 35,
+      "gust_knots": 45,
+      "gust_spread_knots": 15
+    }
+  }
 }
