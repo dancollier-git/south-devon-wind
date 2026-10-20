@@ -292,3 +292,32 @@ Keep these fields in a session entry's `observations.reef` object, or record a r
 Before personalised recommendations, read this log alongside current `docs/forecast.json`, `docs/assessments.json` and `config/wingfoil.json`. Compare the owner's reported enjoyment, gear choices and real launch conditions against the *contemporaneous* forecast where possible. Treat small samples cautiously and **do not** silently change wind thresholds or assert a proven calibration from one session. The owner can request corrections or deletion of a session entry.
 
 **Quick prompt:** “South Milton this morning, 10–12, 4.5 m wing and 900 foil. Gusty but brilliant, launch flat. Log that.”
+
+
+## Prawle wind-direction and speed calibration — working hypothesis (20 October 2026)
+
+**Status: owner hypothesis, not validated and not an operational correction.** The owner expects the difference between Open-Meteo model wind direction and NCI Prawle Point observed direction to depend on the forecast wind sector:
+
+| Forecast wind sector | Hypothesised directional deflection |
+|---|---|
+| N | Large |
+| NE and E | Large |
+| NW | Smaller than the N-sector error (potentially moderate) |
+| S, SW and W | Small |
+
+This is an initial qualitative ranking, **not** a set of numerical adjustments. The sign of the offset (clockwise versus anticlockwise) is not assumed to be constant between sectors. Wind-speed offset is **unknown** and must be estimated independently rather than inferred from the directional hypothesis. No forecast thresholds, GO/WATCH classifications, or published wind speeds should be adjusted automatically based on this hypothesis.
+
+### Evidence motivating the hypothesis
+
+On **19 October 2026**, the archived early-morning Open-Meteo Prawle forecast anticipated a north-to-east shift, but afternoon NCI Prawle observations stayed closer to E/ESE than the forecast's ESE/SE, with several comparisons approximately **20–35 degrees anticlockwise** of forecast. The same day's Prawle sustained wind was also materially stronger than the model's forecast. This is **one day's evidence**, at an exposed headland, not proof of topographic causation or a transferable beach correction.
+
+### Analysis methodology for future observations
+
+- Compare **pre-observation archived forecasts** for the **Prawle location** with fresh, valid NCI Prawle measurements at matched valid times. Preserve original snapshot retrieval timestamp, forecast valid hour, observation time, station, model and matching tolerance (for example, nearest hour within 30 minutes). Never use a later revised forecast as a purported earlier prediction. Forecast retrieval time is not necessarily model issue time.
+- Group comparisons by **forecast direction sector**, not observed sector, to avoid conditioning groups on the outcome. Use explicit, non-overlapping compass bins (for example eight 45-degree sectors centred on N, NE, E, SE, S, SW, W and NW). Keep sample counts per sector and check whether results change with wind strength.
+- Define signed angular error in degrees as `((observed_deg - forecast_deg + 540) % 360) - 180`. Negative means observed wind direction is anticlockwise from forecast; positive means clockwise. Use circular statistics for mean signed direction bias, alongside mean absolute angular error, distribution/spread and sample count. Handle wraparound near 0/360 degrees correctly.
+- Separately compute sustained wind **speed error = observed_knots - forecast_knots**, its mean signed bias, mean absolute error, spread and sample count by forecast sector; optionally repeat for gusts with like-for-like measurement definitions. Note that existing `docs/accuracy.json` uses the opposite sign convention (**forecast minus observed**) for speed; label every result explicitly and do not silently mix conventions.
+- Avoid treating densely sampled readings from the same weather event as independent proof: inspect multiple **different days and weather systems**, including all relevant sectors, and report uncertainty and missing-sector coverage. Look for relationships between direction error, speed, gustiness and wind sector, but do not assume causation.
+- Prawle is an elevated coastal observation point; any eventual model-to-Prawle calibration is **not automatically** a model-to-South-Milton or model-to-Bigbury calibration. Validate against owner-confirmed on-water and beach conditions separately before using it for spot recommendations.
+- Preserve raw source records and archived forecast snapshots. Keep hypotheses and descriptive analysis separate from operational thresholds. Propose numerical corrections only after adequate representative data and explicit owner review; do not implement corrections or change collector/reporting behaviour as part of this documentation update.
+
