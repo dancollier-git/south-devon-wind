@@ -10714,5 +10714,24 @@
     "warnings": [],
     "status": "ok",
     "wind_alert": true
+  },
+  {
+    "source": "https://nci-prawlepoint.org.uk/scripts/wx-data.php",
+    "retrieved_at": "2026-11-10T03:57:35.929890+00:00",
+    "observation_time": "2026-11-10T03:57:11+00:00",
+    "observation_time_raw": "Tue, 10 Nov 2026 03:57:11 +0000",
+    "age_seconds": 24.9,
+    "wind_speed_knots": 33.0,
+    "latest_wind_speed_knots": 37.4,
+    "gust_knots": 38.2,
+    "direction_degrees": 77.0,
+    "average_direction_degrees": 77.0,
+    "dominant_direction": "ENE",
+    "averaging_period_minutes": 10,
+    "stale": false,
+    "stale_after_seconds": 600,
+    "warnings": [],
+    "status": "ok",
+    "wind_alert": true
   }
 ]
