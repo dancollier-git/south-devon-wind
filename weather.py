@@ -49,6 +49,26 @@ def normalize(data, now=None, stale_after=600):
         warnings.append('Observation timestamp is in the future; check clocks')
     if str(data.get('SensorContactLost', '0')) != '0':
         warnings.append('Feed reports lost sensor contact')
+    # Pressure is optional: its quality must not suppress valid wind alerts.
+    pressure_warnings = []
+
+    def pressure(key):
+        try:
+            value = float(data[key])
+            if not math.isfinite(value) or not 800 <= value <= 1100:
+                raise ValueError()
+            return round(value, 3)
+        except (KeyError, TypeError, ValueError):
+            pressure_warnings.append(f'Missing or invalid {key}')
+            return None
+
+    pressure_fields = {
+        'pressure_hpa': pressure('press'),
+        'pressure_today_low_hpa': pressure('pressTL'),
+        'pressure_today_high_hpa': pressure('pressTH'),
+        'pressure_trend': data.get('presstrend') if isinstance(data.get('presstrend'), str) else None,
+        'pressure_warnings': pressure_warnings,
+    }
     result = {
         'source': FEED,
         'retrieved_at': now.isoformat(),
@@ -66,6 +86,7 @@ def normalize(data, now=None, stale_after=600):
         'stale_after_seconds': stale_after,
         'warnings': warnings,
     }
+    result.update(pressure_fields)
     return result
 
 

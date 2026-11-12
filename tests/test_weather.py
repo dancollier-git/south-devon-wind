@@ -33,6 +33,32 @@ class WeatherTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize(self.data, now=self.now)
 
+    def test_pressure_fields(self):
+        result = normalize(self.data, now=self.now)
+        self.assertEqual(result['pressure_hpa'], 1030.4)
+        self.assertEqual(result['pressure_today_low_hpa'], 1017.8)
+        self.assertEqual(result['pressure_today_high_hpa'], 1030.4)
+        self.assertEqual(result['pressure_trend'], 'Rising Slowly')
+        self.assertEqual(result['pressure_warnings'], [])
+
+    def test_optional_pressure_does_not_affect_wind(self):
+        from record import classify
+        for value in [None, 'NaN', 'inf', 'bad', 0, 1200]:
+            with self.subTest(value=value):
+                self.data['press'] = value
+                self.data['wspeed'] = '25'
+                result = classify(normalize(self.data, now=self.now))
+                self.assertIsNone(result['pressure_hpa'])
+                self.assertTrue(result['pressure_warnings'])
+                self.assertEqual(result['warnings'], [])
+                self.assertTrue(result['wind_alert'])
+        for key in ('press', 'pressTL', 'pressTH', 'presstrend'):
+            self.data.pop(key, None)
+        result = normalize(self.data, now=self.now)
+        self.assertIsNone(result['pressure_hpa'])
+        self.assertIsNone(result['pressure_trend'])
+        self.assertEqual(len(result['pressure_warnings']), 3)
+
     def test_mph_conversion(self):
         self.data['windunit'] = 'mph'
         self.data['wspeed'] = '11.50779448'
