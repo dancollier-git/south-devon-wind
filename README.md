@@ -22,12 +22,18 @@ Hourly NCI Prawle Point wind observations, recorded by GitHub Actions and publis
 | `average_direction_degrees` | `avgbearing` |
 | `dominant_direction` | `domwinddir`, summary compass direction |
 | `observation_time` | `obstime`, normalized to UTC; original offset retained in `observation_time_raw` |
+| `pressure_hpa` | `press`, barometric pressure in hPa (numerically equivalent to mb) |
+| `pressure_today_low_hpa`, `pressure_today_high_hpa` | `pressTL`, `pressTH`, source-reported daily pressure range |
+| `pressure_trend` | `presstrend`, source-reported text; trend interval is unspecified |
+| `pressure_warnings` | Optional pressure validation warnings, separate from wind health |
 | `retrieved_at` | Checker retrieval time |
 | `age_seconds`, `stale`, `warnings` | Freshness and source quality at retrieval |
 | `status` | `ok` or `warning` |
 | `wind_alert` | True only for a fresh usable sustained reading >=20 knots |
 
 The feed normally reports `windunit=kts`; supported alternate units are converted. Today's maximum gust (`wgustTM`) is not the recent gust. Freshness is calculated from the observation timestamp, not the HTTP response or `timeUTC`. Observations older than 600 seconds warn; missing timestamps have unknown freshness. Sensor faults and other warnings suppress wind alerts. A gust alone never triggers the sustained-wind alert.
+
+Pressure fields are recorded from 12 November 2026 onward using the same feed request. Older history has no pressure fields and is not backfilled. Missing or invalid pressure values are null with separate `pressure_warnings`; they do not suppress otherwise valid wind alerts. Pressure freshness follows the station observation timestamp; independent sensor freshness and sea-level reduction are not verified. The current feed reports hPa-scale pressure; no pressure unit field is supplied.
 
 A network/HTTP/parse failure is published as an error record instead of silently retaining an old reading as current. An unhealthy feed also fails the workflow after publishing its warning. When reading previously published JSON, recalculate age against the current time: `stale` describes the collection time and does not update itself. Check workflow status if the JSON has stopped changing.
 
