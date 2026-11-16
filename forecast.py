@@ -15,7 +15,7 @@ LOCATIONS = {'south_milton': (50.263, -3.862), 'bigbury': (50.279, -3.884),
 WIND = {'wind_speed_10m': 'kn', 'wind_gusts_10m': 'kn', 'wind_direction_10m': '°'}
 MARINE = {'wave_height': 'm', 'swell_wave_height': 'm',
           'swell_wave_period': 's', 'swell_wave_direction': '°'}
-MAX_AGE = 3 * 3600
+MAX_AGE = 26 * 3600  # Daily forecast snapshots; next daily run replaces them
 
 
 def utc(value):
