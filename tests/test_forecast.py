@@ -45,7 +45,8 @@ class ForecastTests(unittest.TestCase):
             s = f.collect('prawle', 'wind', NOW)
         self.assertIsNone(s['issue_time'])
         self.assertTrue(f.fresh(s, NOW))
-        self.assertFalse(f.fresh(s, NOW + timedelta(hours=4)))
+        self.assertTrue(f.fresh(s, NOW + timedelta(hours=4)))
+        self.assertFalse(f.fresh(s, NOW + timedelta(hours=27)))
         self.assertFalse(f.fresh(s, NOW - timedelta(seconds=1)))
 
     def test_missing_feeds_still_seven_days(self):
@@ -112,7 +113,8 @@ class RetryAndHealthTests(unittest.TestCase):
                    if loc != 'prawle' or kind == 'wind']
         ratings = {'generated_at': NOW.isoformat(), 'locations': {'south_milton': {}, 'bigbury': {}}}
         self.assertTrue(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW))
-        self.assertFalse(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW + timedelta(hours=4)))
+        self.assertTrue(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW + timedelta(hours=4)))
+        self.assertFalse(check({'snapshots': sources, 'retrieved_at': NOW.isoformat()}, ratings, NOW + timedelta(hours=27)))
         self.assertFalse(check({'snapshots': sources[:-1], 'retrieved_at': NOW.isoformat()}, ratings, NOW))
 
 
