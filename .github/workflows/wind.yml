@@ -2,7 +2,7 @@ name: Record and publish wind
 on:
   schedule:
     - cron: '17 * * * *' # Prawle observation hourly
-    - cron: '15 4 * * *' # Daily forecast, UTC; before 05:00 UK in winter
+    - cron: '30 3 * * *' # Daily forecast 03:30 UTC (03:30 GMT / 04:30 BST)
   workflow_dispatch:
   issue_comment:
     types: [created]
@@ -76,7 +76,7 @@ jobs:
         run: python record.py
       - name: Collect and archive forecasts (daily only)
         id: forecast
-        if: github.event_name != 'schedule' || github.event.schedule == '15 4 * * *'
+        if: github.event_name != 'schedule' || github.event.schedule == '30 3 * * *'
         continue-on-error: true
         run: python forecast.py
       - name: Record observation or failure
@@ -98,6 +98,7 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Verify published forecast JSON
         id: publication
+        if: steps.forecast.outcome != 'skipped'
         continue-on-error: true
         run: python publication_check.py
       - name: Report source health
@@ -122,4 +123,6 @@ jobs:
             test "$FORECAST_OUTCOME" = success
             python forecast_health.py
           fi
-          test "$PUBLICATION_OUTCOME" = success
+          if [ "$FORECAST_OUTCOME" != skipped ]; then
+            test "$PUBLICATION_OUTCOME" = success
+          fi
