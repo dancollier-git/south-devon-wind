@@ -2,11 +2,14 @@
 from datetime import datetime, timezone, timedelta
 import json
 import math
+import socket
+import ssl
+import logging
 from pathlib import Path
 import time
 from zoneinfo import ZoneInfo
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent
@@ -33,6 +36,26 @@ def fresh(snapshot, now):
         return False
 
 
+def network_failure(exc, url, attempt):
+    """Emit actionable failure classification without logging credentials or query strings."""
+    cause = exc.reason if isinstance(exc, URLError) else exc
+    if isinstance(exc, HTTPError):
+        category = f'HTTP {exc.code}'
+    elif isinstance(cause, socket.gaierror):
+        category = 'DNS resolution'
+    elif isinstance(cause, (ssl.SSLError, ssl.SSLEOFError)):
+        category = 'TLS handshake/verification'
+    elif isinstance(cause, (socket.timeout, TimeoutError)):
+        category = 'Connection/read timeout'
+    elif isinstance(cause, OSError):
+        category = f'Network OS error {cause.errno}'
+    else:
+        category = type(cause).__name__
+    logging.warning('Forecast request failed: host=%s attempt=%s category=%s detail=%s',
+                    urlsplit(url).hostname, attempt, category, str(cause)[:240])
+    return category
+
+
 def request_json(url):
     for attempt in range(3):
         try:
@@ -43,9 +66,11 @@ def request_json(url):
                 raise ValueError('Response exceeds size limit')
             return json.loads(raw)
         except HTTPError as exc:
+            network_failure(exc, url, attempt + 1)
             if exc.code not in (429, 500, 502, 503, 504) or attempt == 2:
                 raise
-        except (URLError, TimeoutError):
+        except (URLError, TimeoutError, ssl.SSLError, OSError) as exc:
+            network_failure(exc, url, attempt + 1)
             if attempt == 2:
                 raise
         time.sleep(2 ** attempt)
@@ -96,11 +121,33 @@ def collect(location, kind, now):
               'issue_time_basis': 'unavailable', 'stale_after_seconds': MAX_AGE,
               'status': 'error', 'rows': []}
     try:
-        data = request_json(endpoint + '?' + urlencode(params))
-        result['raw'] = data
-        result['rows'] = normalize(data, fields, now)
-        result['coordinates_returned'] = [data['latitude'], data['longitude']]
-        result['status'] = 'ok'
+        candidates = [(endpoint, params, 'best_match')]
+        if kind == 'wind':
+            # Alternative Open-Meteo model endpoint; not an independent provider.
+            # It cannot recover from a host-wide api.open-meteo.com TLS outage.
+            candidates.append(('https://api.open-meteo.com/v1/ecmwf', params, 'ecmwf_ifs'))
+        failures = []
+        for candidate_url, candidate_params, model in candidates:
+            try:
+                data = request_json(candidate_url + '?' + urlencode(candidate_params))
+                rows = normalize(data, fields, now)
+                result['raw'] = data
+                result['rows'] = rows
+                result['coordinates_returned'] = [data['latitude'], data['longitude']]
+                result['endpoint'] = candidate_url
+                result['model_selection'] = model
+                result['status'] = 'ok'
+                if failures:
+                    result['fallback_used'] = True
+                    result['primary_error'] = failures[0]
+                break
+            except Exception as exc:
+                failure = f'{type(exc).__name__}: {exc}'
+                failures.append(failure)
+                logging.warning('Forecast source unavailable: location=%s model=%s error=%s',
+                                location, model, failure[:240])
+        if result['status'] != 'ok':
+            result['error'] = ' | '.join(failures)
     except Exception as exc:
         result['error'] = f'{type(exc).__name__}: {exc}'
     return result
