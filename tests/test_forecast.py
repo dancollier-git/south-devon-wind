@@ -49,6 +49,24 @@ class ForecastTests(unittest.TestCase):
         self.assertFalse(f.fresh(s, NOW + timedelta(hours=27)))
         self.assertFalse(f.fresh(s, NOW - timedelta(seconds=1)))
 
+    def test_wind_fallback_after_primary_failure(self):
+        with patch.object(f, 'request_json', side_effect=[TimeoutError('TLS timeout'), payload()]) as get:
+            snapshot = f.collect('south_milton', 'wind', NOW)
+        self.assertEqual(snapshot['status'], 'ok')
+        self.assertTrue(snapshot['fallback_used'])
+        self.assertEqual(snapshot['model_selection'], 'ecmwf_ifs')
+        self.assertIn('/v1/ecmwf', get.call_args_list[1].args[0])
+        self.assertEqual(len(snapshot['rows']), 168)
+
+    def test_network_failure_categories(self):
+        import socket
+        import ssl
+        from urllib.error import URLError
+        self.assertEqual(f.network_failure(URLError(socket.gaierror(-2, 'no DNS')),
+                         'https://api.open-meteo.com/v1/forecast', 1), 'DNS resolution')
+        self.assertEqual(f.network_failure(URLError(ssl.SSLError('handshake timed out')),
+                         'https://api.open-meteo.com/v1/forecast', 1), 'TLS handshake/verification')
+
     def test_missing_feeds_still_seven_days(self):
         result = f.assessments([], {'south_milton': None, 'bigbury': None}, NOW)
         for place in result['locations'].values():
