@@ -77,6 +77,8 @@ jobs:
       - name: Check whether today's daily forecast is missing
         id: daily_due
         shell: bash
+        env:
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python - <<'PY'
           import json, os
@@ -100,7 +102,7 @@ jobs:
           recovery = now.hour >= 4 and due
           should_collect = scheduled_daily or recovery or os.environ.get('GITHUB_EVENT_NAME') != 'schedule'
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'collect={str(should_collect).lower()}\\n')
+              output.write(f'collect={str(should_collect).lower()}\n')
           print(f'Daily forecast date={today}; missing={due}; collect={should_collect}')
           PY
       - name: Collect and archive forecasts (daily only)
