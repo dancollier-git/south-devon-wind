@@ -96,11 +96,11 @@ jobs:
                       due = True
               except (OSError, ValueError, KeyError, TypeError):
                   due = True
-          # Allow the normal 03:30 UTC run first; hourly 04:17+ is recovery.
+          # The 03:17 UTC hourly run collects early; 03:30 UTC backs it up. Both precede 05:00 UK time.
           now = datetime.now(timezone.utc)
           scheduled_daily = os.environ.get('GITHUB_EVENT_NAME') == 'schedule' and os.environ.get('GITHUB_EVENT_SCHEDULE') == '30 3 * * *'
-          recovery = now.hour >= 4 and due
-          should_collect = scheduled_daily or recovery or os.environ.get('GITHUB_EVENT_NAME') != 'schedule'
+          recovery = now.hour >= 3 and due
+          should_collect = (scheduled_daily and due) or recovery or (os.environ.get('GITHUB_EVENT_NAME') != 'schedule' and due)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'collect={str(should_collect).lower()}\n')
           print(f'Daily forecast date={today}; missing={due}; collect={should_collect}')
