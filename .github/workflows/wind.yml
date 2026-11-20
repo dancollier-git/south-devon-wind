@@ -74,9 +74,38 @@ jobs:
         id: reading
         continue-on-error: true
         run: python record.py
+      - name: Check whether today's daily forecast is missing
+        id: daily_due
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          today = datetime.now(timezone.utc).date()
+          due = False
+          for filename, field in (('docs/forecast.json', 'retrieved_at'),
+                                  ('docs/assessments.json', 'generated_at')):
+              try:
+                  data = json.loads(Path(filename).read_text())
+                  stamp = datetime.fromisoformat(data[field].replace('Z', '+00:00'))
+                  if stamp.tzinfo is None or stamp.astimezone(timezone.utc).date() != today:
+                      due = True
+              except (OSError, ValueError, KeyError, TypeError):
+                  due = True
+          # Allow the normal 03:30 UTC run first; hourly 04:17+ is recovery.
+          now = datetime.now(timezone.utc)
+          scheduled_daily = os.environ.get('GITHUB_EVENT_NAME') == 'schedule' and os.environ.get('GITHUB_EVENT_SCHEDULE') == '30 3 * * *'
+          recovery = now.hour >= 4 and due
+          should_collect = scheduled_daily or recovery or os.environ.get('GITHUB_EVENT_NAME') != 'schedule'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'collect={str(should_collect).lower()}\\n')
+          print(f'Daily forecast date={today}; missing={due}; collect={should_collect}')
+          PY
       - name: Collect and archive forecasts (daily only)
         id: forecast
-        if: github.event_name != 'schedule' || github.event.schedule == '30 3 * * *'
+        if: steps.daily_due.outputs.collect == 'true'
         continue-on-error: true
         run: python forecast.py
       - name: Record observation or failure
