@@ -2,7 +2,8 @@ name: Record and publish wind
 on:
   schedule:
     - cron: '17 * * * *' # Prawle observation hourly
-    - cron: '30 3 * * *' # Daily forecast 03:30 UTC (03:30 GMT / 04:30 BST)
+    - cron: '43 2 * * *' # Extra recovery before the UK report, including during BST
+    - cron: '30 3 * * *' # Final dedicated pre-report retry
   workflow_dispatch:
   issue_comment:
     types: [created]
@@ -77,33 +78,39 @@ jobs:
       - name: Check whether today's daily forecast is missing
         id: daily_due
         shell: bash
-        env:
-          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           python - <<'PY'
           import json, os
           from datetime import datetime, timezone
           from pathlib import Path
+          from zoneinfo import ZoneInfo
 
-          today = datetime.now(timezone.utc).date()
-          due = False
+          now = datetime.now(timezone.utc)
+          london = ZoneInfo('Europe/London')
+          local_now = now.astimezone(london)
+          stamps = []
           for filename, field in (('docs/forecast.json', 'retrieved_at'),
                                   ('docs/assessments.json', 'generated_at')):
               try:
                   data = json.loads(Path(filename).read_text())
                   stamp = datetime.fromisoformat(data[field].replace('Z', '+00:00'))
-                  if stamp.tzinfo is None or stamp.astimezone(timezone.utc).date() != today:
-                      due = True
-              except (OSError, ValueError, KeyError, TypeError):
-                  due = True
-          # The 03:17 UTC hourly run collects early; 03:30 UTC backs it up. Both precede 05:00 UK time.
-          now = datetime.now(timezone.utc)
-          scheduled_daily = os.environ.get('GITHUB_EVENT_NAME') == 'schedule' and os.environ.get('GITHUB_EVENT_SCHEDULE') == '30 3 * * *'
-          recovery = now.hour >= 3 and due
-          should_collect = (scheduled_daily and due) or recovery or (os.environ.get('GITHUB_EVENT_NAME') != 'schedule' and due)
+                  if stamp.tzinfo is None or stamp > now:
+                      stamp = None
+              except (OSError, AttributeError, ValueError, KeyError, TypeError):
+                  stamp = None
+              stamps.append(stamp)
+
+          today = local_now.date()
+          current = (stamps[0] is not None and stamps[0] == stamps[1]
+                     and stamps[0].astimezone(london).date() == today)
+          # Any hourly run from 00:17 UK time can recover a missed collection.
+          # Check against the actual local date even if GitHub delays the job.
+          required = (os.environ['GITHUB_EVENT_NAME'] != 'schedule'
+                      or local_now.hour > 0 or local_now.minute >= 17)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'collect={str(should_collect).lower()}\n')
-          print(f'Daily forecast date={today}; missing={due}; collect={should_collect}')
+              print(f'collect={str(required and not current).lower()}', file=output)
+              print(f'verify={str(required).lower()}', file=output)
+          print(f'Daily forecast date={today}; current={current}; forecast required={required}')
           PY
       - name: Collect and archive forecasts (daily only)
         id: forecast
@@ -129,11 +136,12 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Verify published forecast JSON
         id: publication
-        if: steps.forecast.outcome != 'skipped'
+        if: steps.daily_due.outputs.verify == 'true'
         continue-on-error: true
         run: python publication_check.py
       - name: Report source health
         env:
+          FORECAST_REQUIRED: ${{ steps.daily_due.outputs.verify }}
           PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
           FORECAST_OUTCOME: ${{ steps.forecast.outcome }}
           READING_OUTCOME: ${{ steps.reading.outcome }}
@@ -149,11 +157,9 @@ jobs:
               for source in forecasts['snapshots']:
                   summary.write(f"- {source['location']} {source['kind']}: {source['status']} {source.get('error', '')}\n")
           PY
-          test "$READING_OUTCOME" = success
-          if [ "$FORECAST_OUTCOME" != skipped ]; then
-            test "$FORECAST_OUTCOME" = success
+          if [ "$FORECAST_REQUIRED" = true ]; then
+            test "$PUBLICATION_OUTCOME" = success
+            test "$FORECAST_OUTCOME" = success || test "$FORECAST_OUTCOME" = skipped
             python forecast_health.py
           fi
-          if [ "$FORECAST_OUTCOME" != skipped ]; then
-            test "$PUBLICATION_OUTCOME" = success
-          fi
+          test "$READING_OUTCOME" = success

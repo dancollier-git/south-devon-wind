@@ -5,7 +5,8 @@ import os
 import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from forecast import ROOT
+from zoneinfo import ZoneInfo
+from forecast import ROOT, utc
 
 BASE = 'https://dancollier-git.github.io/south-devon-wind/'
 FILES = ('forecast.json', 'assessments.json')
@@ -49,6 +50,11 @@ def verify(expected, token, fetch=fetch_json, attempts=6, delay=5):
 
 def main():
     expected = {name: json.loads((ROOT / 'docs' / name).read_text()) for name in FILES}
+    stamp = utc(expected['forecast.json']['retrieved_at'])
+    now = datetime.now(timezone.utc)
+    london = ZoneInfo('Europe/London')
+    if stamp > now or stamp.astimezone(london).date() != now.astimezone(london).date():
+        raise ValueError("Publication does not contain today's UK-local forecast")
     token = os.environ.get('GITHUB_RUN_ID', datetime.now(timezone.utc).isoformat())
     verify(expected, token)
 
